@@ -10,7 +10,7 @@ to regenerate just those meals.
 
 - Backend: Node.js + Express (no framework, no database — in-memory only)
 - Frontend: one static HTML page, vanilla JS + fetch, no build step
-- LLM: Google Gemini API, model `gemini-2.0-flash` (configurable via `GEMINI_MODEL`), called
+- LLM: Google Gemini API, model `gemini-flash-latest` (configurable via `GEMINI_MODEL`), called
   directly over REST via Node's built-in `fetch` — no SDK dependency
 
 ## Run it locally

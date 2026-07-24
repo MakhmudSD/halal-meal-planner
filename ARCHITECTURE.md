@@ -24,7 +24,7 @@ model proposes meals; it changes nothing about how violations are caught.
    genuinely free tier with no credit card required, so the app switched again to avoid a hard
    paywall blocking the actual point of the exercise: running the real generate → check →
    regenerate flow and capturing real logs. `lib/llm.js` now calls the Gemini REST API directly
-   via Node's built-in `fetch` (`gemini-2.0-flash` by default) — no additional npm dependency at
+   via Node's built-in `fetch` (`gemini-flash-latest` by default) — no additional npm dependency at
    all, which is a net simplification over both prior providers.
 
 Two structural notes from this history worth keeping in mind if the provider changes again:

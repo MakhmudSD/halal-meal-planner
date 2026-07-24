@@ -42,11 +42,30 @@ to regenerate just those meals.
 
 ## What to look for in the UI
 
-After submitting the form, the page shows:
+After submitting the form, a staged status panel walks through what the backend is actually
+doing (generating, checking, and — only when halal flags are found — regenerating and
+re-checking), then the page shows:
 
 - The 3 generated meals with ingredients, rough macros, and reasoning tied to your activity/sleep.
+- A **daily totals** panel summing calories/protein/carbs/fat across all 3 meals.
 - A **before/after flag panel** showing exactly what the deterministic checker caught in the
   initial generation, and (for halal requests with flags) what the AI's regenerated response
   looked like afterward.
+- **Save as PDF** (native browser print-to-PDF) and **Email this plan** (opens your own mail
+  client with the plan pre-filled via a `mailto:` link) — both client-side only, no server-side
+  email sending or extra credentials involved.
+
+## Tests
+
+`lib/halalCheck.js` — the deterministic safety-net function — has an automated test suite using
+Node's built-in test runner (no extra dependency):
+
+```bash
+npm test
+```
+
+Covers word-boundary matching (no false positives on `hamburger`/`breadcrumb`/`meatless`), haram
+vs. mashbooh qualifier-resolution rules, `-free` negation, and compound-safe-phrase suppression
+(`beef bacon`, `root beer`, etc.).
 
 See `ARCHITECTURE.md` for design reasoning and `SUBMISSION.md` for the assignment writeup.

@@ -141,9 +141,30 @@
   #save-bar {
     display: none;
     justify-content: flex-end;
+    gap: 0.6rem;
     margin-bottom: 1rem;
   }
   #save-bar.visible { display: flex; }
+
+  .summary-panel {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.1rem 1.25rem;
+    margin-bottom: 1.5rem;
+    background: var(--card-bg);
+    box-shadow: var(--shadow);
+    animation: slideIn 0.35s ease both;
+  }
+  .summary-title { display: flex; align-items: center; gap: 0.5rem; font-weight: 700; margin-bottom: 0.75rem; }
+  .summary-title .icon { color: var(--accent); width: 18px; height: 18px; }
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+    gap: 0.75rem;
+  }
+  .summary-stat { text-align: center; padding: 0.5rem 0.25rem; border-radius: 8px; background: var(--accent-bg); }
+  .summary-stat .value { font-size: 1.3rem; font-weight: 700; color: var(--accent); display: block; }
+  .summary-stat .label { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.02em; }
 
   .meal {
     border: 1px solid var(--border);
@@ -200,7 +221,7 @@
     body { max-width: 100%; margin: 0; padding: 1rem; background: #fff; color: #000; }
     form, #status-panel, #save-bar, #error, h1 svg + br { display: none !important; }
     .subtitle { display: none; }
-    .meal, .flag-panel { box-shadow: none; border: 1px solid #ccc; break-inside: avoid; }
+    .meal, .flag-panel, .summary-panel { box-shadow: none; border: 1px solid #ccc; break-inside: avoid; }
     button { display: none !important; }
   }
 </style>
@@ -240,6 +261,10 @@
   <div id="error"></div>
   <div id="status-panel"></div>
   <div id="save-bar">
+    <button type="button" class="secondary" id="email-btn">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"/><polyline points="22,6 12,13 2,6"/></svg>
+      Email this plan
+    </button>
     <button type="button" class="secondary" id="save-btn">
       <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
       Save as PDF
@@ -268,8 +293,76 @@
     const statusPanel = document.getElementById("status-panel");
     const saveBar = document.getElementById("save-bar");
     const saveBtn = document.getElementById("save-btn");
+    const emailBtn = document.getElementById("email-btn");
 
     saveBtn.addEventListener("click", () => window.print());
+
+    let lastPlanData = null;
+
+    function buildPlanText(data) {
+      const lines = ["Halal Meal Planner — today's plan", ""];
+      for (const meal of data.meals) {
+        lines.push(`${meal.slot.toUpperCase()}: ${meal.name}`);
+        lines.push(`Ingredients: ${meal.ingredients.join(", ")}`);
+        lines.push(
+          `Calories: ${meal.macros.calories} | Protein: ${meal.macros.protein_g}g | Carbs: ${meal.macros.carbs_g}g | Fat: ${meal.macros.fat_g}g`
+        );
+        lines.push(meal.reasoning);
+        lines.push("");
+      }
+      const totals = totalMacros(data.meals);
+      lines.push(
+        `Daily total: ${totals.calories} cal | ${totals.protein_g}g protein | ${totals.carbs_g}g carbs | ${totals.fat_g}g fat`
+      );
+      const anyFlagsEver = data.flags.some((s) => s.flags.length > 0);
+      lines.push("");
+      lines.push(
+        anyFlagsEver
+          ? data.corrected && data.remainingFlags.length === 0
+            ? "Halal check: flagged ingredients were found and automatically corrected — all clear now."
+            : "Halal check: some flagged ingredients remain — review before eating."
+          : "Halal check: no flags raised, every ingredient passed on the first try."
+      );
+      return lines.join("\n");
+    }
+
+    emailBtn.addEventListener("click", () => {
+      if (!lastPlanData) return;
+      const subject = encodeURIComponent("My Halal Meal Plan for today");
+      const body = encodeURIComponent(buildPlanText(lastPlanData));
+      // mailto: opens the user's own default mail client with the plan
+      // pre-filled — no email-sending backend, no SMTP/API credentials,
+      // the user reviews and sends it themselves.
+      window.location.href = `mailto:?subject=${subject}&body=${body}`;
+    });
+
+    function totalMacros(meals) {
+      return meals.reduce(
+        (acc, m) => ({
+          calories: acc.calories + (m.macros.calories || 0),
+          protein_g: acc.protein_g + (m.macros.protein_g || 0),
+          carbs_g: acc.carbs_g + (m.macros.carbs_g || 0),
+          fat_g: acc.fat_g + (m.macros.fat_g || 0),
+        }),
+        { calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0 }
+      );
+    }
+
+    function renderDailySummary(meals) {
+      const totals = totalMacros(meals);
+      const panel = document.createElement("div");
+      panel.className = "summary-panel";
+      panel.innerHTML = `
+        <div class="summary-title">${icon("utensils")}Today's totals</div>
+        <div class="summary-grid">
+          <div class="summary-stat"><span class="value">${totals.calories}</span><span class="label">Calories</span></div>
+          <div class="summary-stat"><span class="value">${totals.protein_g}g</span><span class="label">Protein</span></div>
+          <div class="summary-stat"><span class="value">${totals.carbs_g}g</span><span class="label">Carbs</span></div>
+          <div class="summary-stat"><span class="value">${totals.fat_g}g</span><span class="label">Fat</span></div>
+        </div>
+      `;
+      resultsEl.appendChild(panel);
+    }
 
     const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -390,7 +483,9 @@
     });
 
     function render(data) {
+      lastPlanData = data;
       renderFlagPanel(data);
+      renderDailySummary(data.meals);
       renderMeals(data.meals);
     }
 

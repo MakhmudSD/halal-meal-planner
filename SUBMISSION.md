@@ -111,6 +111,21 @@ gone to the auditor stretch goal. Cut for time, consistent with the brief's own 
 this session (see git history for the timestamps of the corresponding code fixes). Nothing here is
 invented to make the log look more dramatic than what actually happened.
 
+**Beyond the original spec — automated tests and two product features, added with time to spare:**
+- `test/halalCheck.test.js` (Node's built-in `node:test`, zero new dependencies): 12 tests covering
+  word-boundary matching, haram-vs-mashbooh qualifier resolution (including the tightened
+  bare-"halal" case above), `-free` negation, and compound-safe-phrase suppression. Run via
+  `npm test`. This replaces the ad-hoc `node -e` checks used during development with something
+  reproducible and reviewable.
+- **Daily nutrition summary** — sums calories/protein/carbs/fat across the 3 generated meals into
+  one totals panel, computed client-side from the existing per-meal macros (no backend change).
+- **Save as PDF / Email this plan** — both client-side only. "Save as PDF" calls the browser's
+  native print dialog against a dedicated print stylesheet. "Email this plan" builds a `mailto:`
+  link with the plan pre-filled and hands off to the user's own mail client — this was chosen over
+  building real email-sending (which would need a new dependency like Nodemailer/Resend plus SMTP
+  or API credentials) specifically to avoid adding a dependency or a credential to manage for a
+  take-home.
+
 ## 회고 (Retrospective)
 
 **Tools used, in order:** Claude Code built the entire app in one session — repo init, curated

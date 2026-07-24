@@ -3,6 +3,22 @@
 This document explains the choices behind the build, written as I made them — not reconstructed
 after the fact.
 
+## Why OpenAI, not Anthropic (mid-build switch)
+
+The build originally used the Anthropic API per the initial spec. Partway through, I switched to
+OpenAI's API (`openai` npm package, `gpt-4o-mini` by default) for three reasons: it's the more
+commonly deployed provider in the ecosystem I'm used to working in, setup friction was lower for
+this specific run, and for the kind of general nutrition/food-statistics brainstorming this app
+leans on for macro estimates and meal ideas, I judged GPT models to be a comfortable fit. This is
+not a claim that one provider is objectively better at the halal-detection problem — that problem
+is solved entirely by the deterministic, non-LLM checker in `lib/halalCheck.js`, which is
+provider-agnostic by design. Swapping the LLM only changes which model proposes meals; it changes
+nothing about how violations are caught. One real trade-off worth naming: OpenAI's Node SDK throws
+synchronously in its constructor if `OPENAI_API_KEY` is unset, unlike some SDKs that only fail on
+the first network call — so `lib/llm.js` lazily constructs the client on first use instead of at
+module load, otherwise a missing key would crash the whole server, including static page serving,
+before any request ever reached the LLM code.
+
 ## Why Express, not Nest (or anything else)
 
 This is a 24-hour take-home with one core feature to prove out: catching halal violations that an

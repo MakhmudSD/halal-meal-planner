@@ -13,10 +13,11 @@ showing results to the user — catching what the model itself would otherwise m
 
 ## AI 활용 기록 (AI Usage Log)
 
-**Tools used:** Claude Code (this session, building the app), Anthropic API with
-`claude-sonnet-4-6` (the app's own meal-generation calls).
+**Tools used:** Claude Code (this session, building the app), OpenAI API with `gpt-4o-mini` (the
+app's own meal-generation calls — see ARCHITECTURE.md for why the app switched providers
+mid-build).
 
-This section is meant to hold real transcript excerpts — actual prompts sent to `claude-sonnet-4-6`
+This section is meant to hold real transcript excerpts — actual prompts sent to `gpt-4o-mini`
 via the app, and actual responses, especially any that violated a halal flag or needed correction.
 These can only be captured once the app has actually been run against the live API.
 

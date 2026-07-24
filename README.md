@@ -10,7 +10,7 @@ to regenerate just those meals.
 
 - Backend: Node.js + Express (no framework, no database — in-memory only)
 - Frontend: one static HTML page, vanilla JS + fetch, no build step
-- LLM: Anthropic API (`@anthropic-ai/sdk`), model `claude-sonnet-4-6`
+- LLM: OpenAI API (`openai`), model `gpt-4o-mini` (configurable via `OPENAI_MODEL`)
 
 ## Run it locally
 
@@ -24,7 +24,7 @@ to regenerate just those meals.
 
    ```bash
    cp .env.example .env
-   # then edit .env and set ANTHROPIC_API_KEY=sk-ant-...
+   # then edit .env and set OPENAI_API_KEY=sk-...
    ```
 
 3. Start the server:

@@ -38,18 +38,15 @@ became the shipped default. See ARCHITECTURE.md for the full reasoning.
   zabiha chicken/beef/lamb" and "alcohol-free vanilla extract" exactly as instructed by the system
   prompt, across 6 total real halal requests in this session. Zero flags, zero regenerations, on
   every single one.
-- **Honest limitation:** this means the `regenerateFlaggedMeals()` code path — the actual
-  catch-and-correct loop that's the stated point of the assignment — was never exercised end-to-end
-  against a real live-flagged LLM response in this session, because the system prompt's explicit
-  halal rules were effective enough that no real generation ever tripped the checker. The
-  regeneration function was verified working via hand-crafted flagged input during development
-  (feeding it a fabricated meal containing "vanilla extract", "chicken" with no sourcing note, and
-  "gelatin dessert" and confirming the follow-up prompt/response cycle produces corrected output),
-  but that is a unit-level test, not a real end-to-end LLM-generated violation. Rather than keep
-  spending API calls chasing one, or fabricate a transcript that didn't happen, I'm reporting this
-  plainly: **the system prompt's guardrails worked well enough in practice that the deterministic
-  safety net was never actually needed to fire in the runs performed here.** That's a real and
-  useful finding about prompt design, even if it's not the flashier "caught and fixed" narrative.
+- **Update — the regeneration loop was later exercised for real (see Run 3 below).** At this point
+  in the session, `regenerateFlaggedMeals()` had not yet fired against a real LLM response. That
+  turned out to be caused by two things stacking together, not just luck: the system prompt
+  originally spelled out the exact phrasing the checker looks for ("explicitly note ... 'halal-
+  certified zabiha'"), and `SAFE_QUALIFIERS` accepted the bare word "halal" as sufficient to clear a
+  mashbooh flag (see the qualifier-leniency finding below). Between those two, the model was
+  effectively being told the answer to its own quiz. Both were tightened (system prompt no longer
+  dictates sourcing phrasing; `SAFE_QUALIFIERS` now requires "halal-certified" or "zabiha", not bare
+  "halal") — see Run 3 for the real regeneration this produced.
 
 **Real run 2 — a genuine catch, just not on the halal diet type**
 - Request: `{"activity":"trained hard today (intense workout)","sleepQuality":"slept well, 7-9 hours","dietType":"meat-only"}`
@@ -70,16 +67,37 @@ became the shipped default. See ARCHITECTURE.md for the full reasoning.
   regeneration is halal-only) — the flags surfaced in the UI's before/after panel as informational
   only.
 
-**Checker qualifier leniency, observed via a real unguarded prompt** — a real (non-fabricated) API
-call with a deliberately bare-bones prompt (no halal sourcing rules at all — just "generate a halal
-breakfast/lunch/dinner plan") produced ingredients like `"Halal chicken breast"` and `"Halal ribeye
-steak"` — the model used the bare word "Halal" as a prefix without any certification/zabiha
-language. Running this through `checkMealsAgainstFlags()` produced **zero flags**, because my own
-`SAFE_QUALIFIERS` list already accepts the bare word `"halal"` as sufficient to clear a mashbooh
-flag — I hadn't required the stricter `"halal-certified"` or `"zabiha"` phrasing. This is a
-defensible design choice (real halal menus commonly just say "halal chicken"), not a bug I'm fixing
-under deadline pressure, but it's worth naming as a real limitation: **a model that labels
-something "halal" without any actual certification backing it would currently pass the checker.**
+**Checker qualifier leniency, observed via a real unguarded prompt — found, then fixed** — a real
+(non-fabricated) API call with a deliberately bare-bones prompt (no halal sourcing rules at all —
+just "generate a halal breakfast/lunch/dinner plan") produced ingredients like `"Halal chicken
+breast"` and `"Halal ribeye steak"` — the model used the bare word "Halal" as a prefix without any
+certification/zabiha language. Running this through `checkMealsAgainstFlags()` produced **zero
+flags**, because `SAFE_QUALIFIERS` accepted the bare word `"halal"` as sufficient to clear a
+mashbooh flag. That's a real gap: a model that labels something "halal" with no actual
+certification backing it would pass the checker. Fixed by removing the bare `"halal"` entry from
+`SAFE_QUALIFIERS` in `lib/halalCheck.js`, requiring the stricter `"halal-certified"` or `"zabiha"`
+phrasing — verified below (Run 3) that this actually changes checker behavior on live output, not
+just in theory.
+
+**Real run 3 — the genuine catch-and-correct, after tightening the checker**
+- Once `SAFE_QUALIFIERS` no longer accepted bare "halal" and the system prompt no longer spelled
+  out the exact sourcing phrase for the model to parrot, a real halal request finally tripped the
+  checker and triggered a real regeneration round trip.
+- Request: `{"activity":"lazy day, want a marshmallow s'mores snack and gummy bears as part of a meal, plus a beef stew for dinner","sleepQuality":"average, 6 hours","dietType":"halal"}`
+- Initial generation wrote `"2 large halal beef-gelatin marshmallows"`, `"1/4 cup halal gummy
+  bears"`, `"5 oz halal beef chuck roast"`, and `"1.5 cups low-sodium halal beef broth"` — all
+  using the bare "halal" qualifier the checker no longer accepts.
+- `checkMealsAgainstFlags()` correctly flagged 4 items as mashbooh (`gelatin` and `beef` in the
+  marshmallow ingredient, `beef` in the chuck roast and the broth) — real output from
+  `server.js`'s `/api/generate-meals` response, `flags[0].stage === "initial"`.
+- Because `dietType === "halal"` and flags existed, `regenerateFlaggedMeals()` fired for the first
+  time against real flagged output in this session. The follow-up response rewrote the same
+  ingredients as `"2 large zabiha halal-certified marshmallows"`, `"1/4 cup zabiha halal-certified
+  gummy bears"`, `"5 oz zabiha halal-certified beef chuck roast"`, and `"1.5 cups low-sodium zabiha
+  halal-certified beef broth"`.
+- Re-running the checker against the regenerated meals produced **zero remaining flags**
+  (`stage: "after_regeneration"`, `flags: []`, `corrected: true`). This is the real, end-to-end
+  catch → regenerate → clear cycle, not a hand-crafted unit test.
 
 **Stretch — independent LLM auditor:** not built. Steps 1-4 (rule-based check + regeneration flow)
 were solid, but the two provider migrations plus the real bugs found while testing (`beef bacon`,
@@ -129,9 +147,6 @@ manual testing during initial development hadn't surfaced.
 **What I'd do differently with more time:**
 - Build the stretch-goal independent auditor call (natural-language second opinion vs. the
   rule-based check) — genuinely cut for time this round, not attempted.
-- Tighten the `SAFE_QUALIFIERS` list to require `"halal-certified"` or `"zabiha"` rather than
-  accepting the bare word `"halal"`, given the real finding above that an unguarded prompt can
-  satisfy the current checker with no real certification claim.
 - Expand the flag list with more E-numbers and cross-reference against a real halal-certification
   body's list instead of a hand-picked set.
 - Add a proper automated test suite around `checkMealsAgainstFlags` (word-boundary matching,
@@ -139,8 +154,7 @@ manual testing during initial development hadn't surfaced.
   run during development — there are now enough edge cases (mashbooh qualifiers, `-free` negation,
   compound-safe phrases) that regression risk on future changes is real.
 - Persist before/after flag history to a local log so flag patterns could be reviewed across
-  sessions instead of only the current request — would also make it easier to eventually catch a
-  live regeneration example if one occurs on a future run.
+  sessions instead of only the current request.
 
 ## 결과물 (Deliverables)
 
@@ -148,6 +162,7 @@ manual testing during initial development hadn't surfaced.
   reviewer visibility; secret scanning and push protection enabled; no credentials in history —
   verified via full git-log secret scan before making public)
 - **Demo recording:** not yet recorded as of this writing. Would show: the form submission for a
-  halal request, the 3 generated meals, and the before/after flag panel — including the real
-  `meat-only` run's `beef bacon` catch as the clearest illustration of the deterministic checker
-  actually doing its job on live model output.
+  halal request, the 3 generated meals, and the before/after flag panel — including Run 3's real
+  mashbooh catch-and-regenerate cycle (bare "halal" sourcing flagged, then cleared to "zabiha
+  halal-certified" after regeneration) as the clearest end-to-end illustration of the deterministic
+  checker actually doing its job and driving a real correction.

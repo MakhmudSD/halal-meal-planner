@@ -87,14 +87,26 @@ you phrase the follow-up) could spin forever or run up API cost with no guarante
 regeneration pass is enough to demonstrate the "catch it, fix it" flow for the demo, and the UI
 transparently shows if flags remain afterward rather than hiding a failure.
 
-## Deterministic checker: substring match, not NLP
+## Deterministic checker: word-boundary match, not NLP
 
-`data/halal-flags.json` is checked with case-insensitive substring matching, plus two small rules:
-a `mashbooh` (uncertain-until-verified) flag is resolved if the ingredient string carries an
-explicit sourcing qualifier ("halal-certified", "zabiha," etc.), and any term is negated by a
-"`<term>-free`" qualifier (so "alcohol-free vanilla extract" doesn't falsely flag on "alcohol").
-`haram` terms (pork, alcohol, wine, lard) are never resolved by a qualifier — they're forbidden
-outright, not merely unverified, so no sourcing note can excuse them.
+`data/halal-flags.json` is checked with case-insensitive, word-boundary regex matching (`\bterm\b`,
+not plain substring), plus two small rules: a `mashbooh` (uncertain-until-verified) flag is
+resolved if the ingredient string carries an explicit sourcing qualifier ("halal-certified",
+"zabiha"), and any term is negated by a "`<term>-free`" qualifier (so "alcohol-free vanilla
+extract" doesn't falsely flag on "alcohol"). `haram` terms (pork, alcohol, wine, lard) are never
+resolved by a qualifier — they're forbidden outright, not merely unverified, so no sourcing note can
+excuse them.
+
+`SAFE_QUALIFIERS` originally also accepted the bare word `"halal"`, not just `"halal-certified"`/
+`"zabiha"`. A real unguarded-prompt test showed a model can write `"Halal chicken breast"` with no
+actual certification claim and still clear the checker — that's the exact failure mode the
+assignment exists to catch. Tightened to require the stricter phrasing. This also surfaced that the
+system prompt itself had been part of the problem: it told the model the literal phrase
+("'halal-certified zabiha' sourced meat") the checker was looking for, so real generations always
+pre-satisfied it and the regeneration path never fired. Removed that prescriptive line from the
+system prompt (kept only the pork/alcohol/lard prohibition) so the checker is what actually enforces
+sourcing language, not the prompt handing the model the answer — see SUBMISSION.md Run 3 for the
+real catch-and-regenerate cycle this produced.
 
 This is deliberately not a full NLP/embedding-based classifier. The brief explicitly says
 substring/keyword matching is acceptable, and building a smarter classifier would reintroduce the

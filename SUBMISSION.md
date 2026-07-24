@@ -35,9 +35,11 @@ became the shipped default. See ARCHITECTURE.md for the full reasoning.
 - This and four more halal-diet runs (varied activity/sleep phrasing, one specifically engineered
   toward a vanilla-extract-prone dessert request — "craving something sweet like pudding or
   custard") **all came back fully compliant** — the model consistently wrote "halal-certified
-  zabiha chicken/beef/lamb" and "alcohol-free vanilla extract" exactly as instructed by the system
-  prompt, across 6 total real halal requests in this session. Zero flags, zero regenerations, on
-  every single one.
+  zabiha chicken/beef/lamb" and "alcohol-free vanilla extract", across 6 total real halal requests
+  in this session. Zero flags, zero regenerations, on every single one. At the time these ran, the
+  system prompt (`DIET_RULES.halal` in `lib/llm.js`) still explicitly instructed the model to use
+  that exact sourcing phrasing — which turned out to be *why* nothing ever flagged (see the Update
+  below and Run 3, where that instruction was later removed).
 - **Update — the regeneration loop was later exercised for real (see Run 3 below).** At this point
   in the session, `regenerateFlaggedMeals()` had not yet fired against a real LLM response. That
   turned out to be caused by two things stacking together, not just luck: the system prompt

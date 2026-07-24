@@ -5,77 +5,179 @@
 <title>Halal Meal Planner</title>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <style>
-  :root { color-scheme: light dark; }
+  :root {
+    color-scheme: light dark;
+    --bg: #ffffff;
+    --fg: #1a1a1a;
+    --muted: #6b6b6b;
+    --border: #e2e2e2;
+    --card-bg: #fafafa;
+    --accent: #1a7f37;
+    --accent-bg: #1a7f3714;
+    --danger: #c0392b;
+    --danger-bg: #c0392b14;
+    --warn: #b8860b;
+    --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14161a;
+      --fg: #eaeaea;
+      --muted: #9a9a9a;
+      --border: #2c2f35;
+      --card-bg: #1b1e24;
+      --accent: #3fbf6e;
+      --accent-bg: #3fbf6e1a;
+      --danger: #ff6b5e;
+      --danger-bg: #ff6b5e1a;
+      --warn: #e0b13d;
+      --shadow: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+    }
+  }
+  * { box-sizing: border-box; }
   body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     max-width: 720px;
     margin: 2rem auto;
-    padding: 0 1rem;
+    padding: 0 1rem 4rem;
     line-height: 1.5;
+    background: var(--bg);
+    color: var(--fg);
   }
-  h1 { font-size: 1.5rem; }
+  h1 { font-size: 1.6rem; margin-bottom: 0.25rem; }
+  .subtitle { color: var(--muted); margin-top: 0; margin-bottom: 1.5rem; font-size: 0.95rem; }
+
   form {
     display: grid;
-    gap: 0.75rem;
-    padding: 1rem;
-    border: 1px solid #8884;
-    border-radius: 8px;
+    gap: 1rem;
+    padding: 1.25rem;
+    border: 1px solid var(--border);
+    border-radius: 12px;
     margin-bottom: 1.5rem;
+    background: var(--card-bg);
+    box-shadow: var(--shadow);
   }
-  label { font-weight: 600; font-size: 0.9rem; }
-  select, input {
-    padding: 0.5rem;
+  label { font-weight: 600; font-size: 0.85rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.02em; }
+  select {
+    display: block;
+    width: 100%;
+    margin-top: 0.4rem;
+    padding: 0.65rem 0.75rem;
     font-size: 1rem;
-    border-radius: 6px;
-    border: 1px solid #8886;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--fg);
   }
   button {
-    padding: 0.6rem 1rem;
+    padding: 0.8rem 1rem;
     font-size: 1rem;
     font-weight: 600;
-    border-radius: 6px;
+    border-radius: 8px;
     border: none;
-    background: #1a7f37;
+    background: var(--accent);
     color: white;
     cursor: pointer;
+    transition: transform 0.1s ease, opacity 0.2s ease;
   }
-  button:disabled { opacity: 0.6; cursor: wait; }
-  .meal {
-    border: 1px solid #8884;
-    border-radius: 8px;
-    padding: 1rem;
-    margin-bottom: 1rem;
-  }
-  .meal h3 { margin: 0 0 0.25rem 0; text-transform: capitalize; }
-  .macros { font-size: 0.85rem; opacity: 0.8; }
-  .reasoning { font-style: italic; margin-top: 0.5rem; }
-  ul.ingredients { margin: 0.5rem 0; padding-left: 1.25rem; }
-  .flag-panel {
-    border: 2px solid #c0392b;
-    background: #c0392b11;
-    border-radius: 8px;
-    padding: 1rem;
+  button:hover:not(:disabled) { transform: translateY(-1px); }
+  button:disabled { opacity: 0.55; cursor: wait; transform: none; }
+
+  /* ---- status / "thinking" panel ---- */
+  #status-panel {
+    display: none;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.1rem 1.25rem;
     margin-bottom: 1.5rem;
+    background: var(--card-bg);
+    box-shadow: var(--shadow);
   }
-  .flag-panel.clean {
-    border-color: #1a7f37;
-    background: #1a7f3711;
+  #status-panel.visible { display: block; animation: fadeIn 0.25s ease; }
+  .status-step {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.4rem 0;
+    font-size: 0.92rem;
+    color: var(--muted);
+    opacity: 0.45;
+    transition: opacity 0.3s ease, color 0.3s ease;
   }
+  .status-step.active { opacity: 1; color: var(--fg); }
+  .status-step.done { opacity: 1; color: var(--fg); }
+  .status-icon {
+    flex: none;
+    width: 20px; height: 20px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.8rem;
+  }
+  .status-step.active .status-icon::before {
+    content: "";
+    display: block;
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    animation: spin 0.7s linear infinite;
+  }
+  .status-step.done .status-icon::before { content: "✓"; color: var(--accent); font-weight: 700; font-size: 1rem; }
+  .status-step:not(.active):not(.done) .status-icon::before { content: "•"; color: var(--muted); }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+  @keyframes slideIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+  .meal {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.1rem 1.25rem;
+    margin-bottom: 1rem;
+    background: var(--card-bg);
+    box-shadow: var(--shadow);
+    animation: slideIn 0.35s ease both;
+  }
+  .meal h3 { margin: 0 0 0.5rem 0; font-size: 1.05rem; display: flex; align-items: center; gap: 0.5rem; }
+  .slot-badge {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+    background: var(--accent-bg);
+    color: var(--accent);
+  }
+  .macros { font-size: 0.82rem; color: var(--muted); margin: 0.5rem 0; }
+  .reasoning { font-style: italic; margin-top: 0.5rem; font-size: 0.9rem; color: var(--muted); }
+  ul.ingredients { margin: 0.5rem 0; padding-left: 1.25rem; }
+  ul.ingredients li { margin-bottom: 0.15rem; }
+
+  .flag-panel {
+    border: 1px solid var(--danger);
+    background: var(--danger-bg);
+    border-radius: 12px;
+    padding: 1.1rem 1.25rem;
+    margin-bottom: 1.5rem;
+    animation: slideIn 0.35s ease both;
+  }
+  .flag-panel.clean { border-color: var(--accent); background: var(--accent-bg); }
   .flag-item { margin-bottom: 0.5rem; font-size: 0.9rem; }
-  .flag-status { font-weight: 700; text-transform: uppercase; }
-  .flag-status.haram { color: #c0392b; }
-  .flag-status.mashbooh { color: #b8860b; }
-  .stage-label { font-weight: 700; margin-top: 0.75rem; display: block; }
-  #error { color: #c0392b; font-weight: 600; }
+  .flag-status { font-weight: 700; text-transform: uppercase; font-size: 0.78rem; padding: 0.1rem 0.4rem; border-radius: 4px; }
+  .flag-status.haram { color: var(--danger); background: var(--danger-bg); }
+  .flag-status.mashbooh { color: var(--warn); background: #b8860b1a; }
+  .stage-label { font-weight: 700; margin-top: 0.85rem; display: block; }
+  .stage-label:first-of-type { margin-top: 0.5rem; }
+
+  #error { color: var(--danger); font-weight: 600; margin-bottom: 1rem; }
 </style>
 </head>
 <body>
   <h1>🍽️ Halal Meal Planner</h1>
-  <p>Get 3 meals for the day based on your activity level and sleep quality — filtered by diet type. For halal, every ingredient is checked against a curated flag list before it reaches you.</p>
+  <p class="subtitle">Get 3 meals for the day based on your activity level and sleep quality — filtered by diet type. For halal, every ingredient is checked against a curated flag list before it reaches you, and corrected if needed.</p>
 
   <form id="meal-form">
     <div>
-      <label for="activity">Activity today</label><br />
+      <label for="activity">Activity today</label>
       <select id="activity" name="activity">
         <option value="trained hard today (intense workout)">Trained hard today (intense workout)</option>
         <option value="light activity today (walk, light exercise)">Light activity today</option>
@@ -83,7 +185,7 @@
       </select>
     </div>
     <div>
-      <label for="sleepQuality">Sleep quality last night</label><br />
+      <label for="sleepQuality">Sleep quality last night</label>
       <select id="sleepQuality" name="sleepQuality">
         <option value="slept well, 7-9 hours">Slept well (7-9 hours)</option>
         <option value="slept poorly, under 5 hours">Slept poorly (under 5 hours)</option>
@@ -91,7 +193,7 @@
       </select>
     </div>
     <div>
-      <label for="dietType">Diet type</label><br />
+      <label for="dietType">Diet type</label>
       <select id="dietType" name="dietType">
         <option value="halal">Halal</option>
         <option value="vegan">Vegan</option>
@@ -102,6 +204,7 @@
   </form>
 
   <div id="error"></div>
+  <div id="status-panel"></div>
   <div id="results"></div>
 
   <script>
@@ -109,6 +212,63 @@
     const resultsEl = document.getElementById("results");
     const errorEl = document.getElementById("error");
     const submitBtn = document.getElementById("submit-btn");
+    const statusPanel = document.getElementById("status-panel");
+
+    const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+    // Mirrors the real backend pipeline (server.js): generate -> deterministic
+    // check -> (halal + flagged only) regenerate -> re-check. These steps are
+    // real stages of the actual request, just paced for the UI rather than
+    // dumped on screen the instant the response lands.
+    const BASE_STEPS = [
+      { key: "send", label: "Sending your preferences to the AI chef", delay: 500 },
+      { key: "generate", label: "AI is thinking up 3 meals for you", delay: 1300 },
+      { key: "check", label: "Running the deterministic halal safety check", delay: 900 },
+    ];
+    const CORRECTION_STEPS = [
+      { key: "flag", label: "Found ingredients that need verification", delay: 700 },
+      { key: "regenerate", label: "Asking the AI to fix those meals", delay: 1300 },
+      { key: "recheck", label: "Re-checking the corrected meals", delay: 700 },
+    ];
+
+    function renderStatusSteps(steps) {
+      statusPanel.innerHTML = steps
+        .map((s) => `<div class="status-step" data-key="${s.key}"><span class="status-icon"></span><span>${s.label}</span></div>`)
+        .join("");
+    }
+
+    function setStepState(key, state) {
+      const el = statusPanel.querySelector(`[data-key="${key}"]`);
+      if (!el) return;
+      el.classList.remove("active", "done");
+      if (state) el.classList.add(state);
+    }
+
+    async function runSteps(steps) {
+      for (const s of steps) {
+        setStepState(s.key, "active");
+        await sleep(s.delay);
+        setStepState(s.key, "done");
+      }
+    }
+
+    // Like runSteps, but the final step's spinner stays active until
+    // `waitFor` actually resolves (not just its nominal delay) — so if the
+    // real request is slower than the animation, the user sees a spinner
+    // covering that wait instead of a "done" list sitting in front of dead air.
+    async function runStepsAwaiting(steps, waitFor) {
+      for (let i = 0; i < steps.length - 1; i++) {
+        const s = steps[i];
+        setStepState(s.key, "active");
+        await sleep(s.delay);
+        setStepState(s.key, "done");
+      }
+      const last = steps[steps.length - 1];
+      setStepState(last.key, "active");
+      const [, result] = await Promise.all([sleep(last.delay), waitFor]);
+      setStepState(last.key, "done");
+      return result;
+    }
 
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -117,6 +277,9 @@
       submitBtn.disabled = true;
       submitBtn.textContent = "Generating...";
 
+      statusPanel.classList.add("visible");
+      renderStatusSteps(BASE_STEPS);
+
       const payload = {
         activity: document.getElementById("activity").value,
         sleepQuality: document.getElementById("sleepQuality").value,
@@ -124,15 +287,33 @@
       };
 
       try {
-        const res = await fetch("/api/generate-meals", {
+        const fetchPromise = fetch("/api/generate-meals", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
+        }).then(async (res) => {
+          const body = await res.json();
+          if (!res.ok) throw new Error(body.error || "Request failed");
+          return body;
         });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || "Request failed");
+
+        // Walk the base steps at a human-readable pace; the final step's
+        // spinner keeps running past its nominal delay if the real request
+        // is still in flight, so there's never a "done" list sitting in
+        // front of a still-pending response.
+        const data = await runStepsAwaiting(BASE_STEPS, fetchPromise);
+
+        const hadInitialFlags = data.flags.some((s) => s.stage === "initial" && s.flags.length > 0);
+        if (hadInitialFlags && data.corrected) {
+          renderStatusSteps([...BASE_STEPS, ...CORRECTION_STEPS]);
+          BASE_STEPS.forEach((s) => setStepState(s.key, "done"));
+          await runSteps(CORRECTION_STEPS);
+        }
+
+        statusPanel.classList.remove("visible");
         render(data);
       } catch (err) {
+        statusPanel.classList.remove("visible");
         errorEl.textContent = "Error: " + err.message;
       } finally {
         submitBtn.disabled = false;
@@ -176,18 +357,22 @@
       resultsEl.appendChild(panel);
     }
 
+    const SLOT_ICON = { breakfast: "🌅", lunch: "☀️", dinner: "🌙" };
+
     function renderMeals(meals) {
-      for (const meal of meals) {
+      meals.forEach((meal, i) => {
         const div = document.createElement("div");
         div.className = "meal";
+        div.style.animationDelay = `${i * 80}ms`;
+        const icon = SLOT_ICON[meal.slot] || "🍴";
         div.innerHTML = `
-          <h3>${meal.slot}: ${meal.name}</h3>
+          <h3><span class="slot-badge">${meal.slot}</span> ${icon} ${meal.name}</h3>
           <ul class="ingredients">${meal.ingredients.map((i) => `<li>${i}</li>`).join("")}</ul>
           <div class="macros">Calories: ${meal.macros.calories} · Protein: ${meal.macros.protein_g}g · Carbs: ${meal.macros.carbs_g}g · Fat: ${meal.macros.fat_g}g</div>
           <div class="reasoning">${meal.reasoning}</div>
         `;
         resultsEl.appendChild(div);
-      }
+      });
     }
   </script>
 </body>

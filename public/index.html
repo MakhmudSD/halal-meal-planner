@@ -150,9 +150,13 @@
     grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
     gap: 0.75rem;
   }
-  .summary-stat { text-align: center; padding: 0.5rem 0.25rem; border-radius: 8px; background: var(--accent-bg); }
-  .summary-stat .value { font-size: 1.3rem; font-weight: 700; color: var(--accent); display: block; }
+  .summary-stat { text-align: center; padding: 0.5rem 0.25rem; border-radius: 8px; background: var(--stat-bg, var(--accent-bg)); }
+  .summary-stat .value { font-size: 1.3rem; font-weight: 700; color: var(--stat-fg, var(--accent)); display: block; }
   .summary-stat .label { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.02em; }
+  .summary-stat.calories { --stat-bg: #fdf0e2; --stat-fg: #c9761c; }
+  .summary-stat.protein { --stat-bg: #e6f0fd; --stat-fg: #2a6fc9; }
+  .summary-stat.carbs { --stat-bg: #f3ecfb; --stat-fg: #8248c9; }
+  .summary-stat.fat { --stat-bg: #fce9ef; --stat-fg: #c92a71; }
 
   .meal {
     border: 1px solid var(--border);
@@ -193,9 +197,22 @@
   .flag-panel-title .icon { width: 18px; height: 18px; }
   .flag-panel .icon { color: var(--danger); }
   .flag-panel.clean .icon { color: var(--accent); }
-  .flag-item { margin-bottom: 0.5rem; font-size: 0.9rem; display: flex; align-items: flex-start; gap: 0.4rem; }
-  .flag-item .icon { margin-top: 0.15rem; }
-  .flag-status { font-weight: 700; text-transform: uppercase; font-size: 0.78rem; padding: 0.1rem 0.4rem; border-radius: 4px; }
+  .flag-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    padding: 0.6rem 0;
+    font-size: 0.9rem;
+    border-bottom: 1px solid rgba(0,0,0,0.06);
+  }
+  .flag-item:last-of-type { border-bottom: none; }
+  .flag-item .icon { margin-top: 0.2rem; }
+  .flag-item-body { flex: 1; min-width: 0; }
+  .flag-item-head { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.15rem; }
+  .flag-ingredient { font-weight: 600; }
+  .flag-meal { font-size: 0.8rem; color: var(--muted); }
+  .flag-reason { color: var(--muted); font-size: 0.85rem; }
+  .flag-status { font-weight: 700; text-transform: uppercase; font-size: 0.7rem; padding: 0.1rem 0.4rem; border-radius: 4px; flex: none; }
   .flag-status.haram { color: var(--danger); background: var(--danger-bg); }
   .flag-status.mashbooh { color: var(--warn); background: var(--warn-bg); }
   .stage-label { font-weight: 700; margin-top: 0.85rem; display: block; }
@@ -215,7 +232,7 @@
 </style>
 </head>
 <body>
-  <h1><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4"/><path d="M5 10a7 7 0 0 1 14 0v9a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1z"/><path d="M2 21h20"/></svg> Halal Meal Planner</h1>
+  <h1><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18h12"/><path d="M7 18c-.6-3 .5-5-1-7.5C4.7 8.4 5 5 8 3.6c.6 1.4 1.6 1.9 2.5 1 1-1 .8-2.3.8-2.3C13 3 14.3 4.6 14 6.5c1.6-.6 3 .3 3.3 2 .3 1.7-.7 2.8-1.3 3.5-1.7 2-1 5-1.7 6"/></svg> Halal Meal Planner</h1>
   <p class="subtitle">Get 3 meals for the day based on your activity level and sleep quality — filtered by diet type. For halal, every ingredient is checked against a curated flag list before it reaches you, and corrected if needed.</p>
 
   <form id="meal-form">
@@ -343,10 +360,10 @@
       panel.innerHTML = `
         <div class="summary-title">${icon("utensils")}Today's totals</div>
         <div class="summary-grid">
-          <div class="summary-stat"><span class="value">${totals.calories}</span><span class="label">Calories</span></div>
-          <div class="summary-stat"><span class="value">${totals.protein_g}g</span><span class="label">Protein</span></div>
-          <div class="summary-stat"><span class="value">${totals.carbs_g}g</span><span class="label">Carbs</span></div>
-          <div class="summary-stat"><span class="value">${totals.fat_g}g</span><span class="label">Fat</span></div>
+          <div class="summary-stat calories"><span class="value">${totals.calories}</span><span class="label">Calories</span></div>
+          <div class="summary-stat protein"><span class="value">${totals.protein_g}g</span><span class="label">Protein</span></div>
+          <div class="summary-stat carbs"><span class="value">${totals.carbs_g}g</span><span class="label">Carbs</span></div>
+          <div class="summary-stat fat"><span class="value">${totals.fat_g}g</span><span class="label">Fat</span></div>
         </div>
       `;
       resultsEl.appendChild(panel);
@@ -495,7 +512,10 @@
           html += `<div class="flag-item">No flags at this stage.</div>`;
         } else {
           for (const f of stage.flags) {
-            html += `<div class="flag-item">${icon("alert")}<span><span class="flag-status ${f.status}">${f.status}</span> — "${f.ingredient}" in <em>${f.meal}</em>: ${f.reason}</span></div>`;
+            html += `<div class="flag-item">${icon("alert")}<div class="flag-item-body">
+              <div class="flag-item-head"><span class="flag-status ${f.status}">${f.status}</span><span class="flag-ingredient">"${f.ingredient}"</span><span class="flag-meal">in ${f.meal}</span></div>
+              <div class="flag-reason">${f.reason}</div>
+            </div></div>`;
           }
         }
       }

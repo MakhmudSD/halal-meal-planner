@@ -5,8 +5,12 @@
 <title>Halal Meal Planner</title>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <style>
+  /* Committed to a light theme regardless of OS/browser dark-mode preference.
+     color-scheme: light (not "light dark") so native form controls (the
+     <select> dropdowns) and scrollbars render light too, not just the
+     custom-styled elements below. */
   :root {
-    color-scheme: light dark;
+    color-scheme: light;
     --bg: #fbfcfa;
     --fg: #24292e;
     --muted: #6e7781;
@@ -19,22 +23,6 @@
     --warn: #b8860b;
     --warn-bg: #fdf3df;
     --shadow: 0 1px 2px rgba(0,0,0,0.04), 0 1px 1px rgba(0,0,0,0.03);
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #1c1f24;
-      --fg: #e8e8e8;
-      --muted: #9aa0a6;
-      --border: #2e3238;
-      --card-bg: #22262c;
-      --accent: #4cc38a;
-      --accent-bg: #1d3b2a;
-      --danger: #e5766a;
-      --danger-bg: #3a2220;
-      --warn: #e3b356;
-      --warn-bg: #3a2f14;
-      --shadow: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
-    }
   }
   * { box-sizing: border-box; }
   body {

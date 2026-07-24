@@ -13,9 +13,9 @@ showing results to the user — catching what the model itself would otherwise m
 
 ## AI 활용 기록 (AI Usage Log)
 
-**Tools used:** Claude Code (this session — building the entire app, including the mid-build
-provider migrations and bug fixes below), Google Gemini API with `gemini-flash-latest` (the app's
-own meal-generation calls).
+**Tools used:** Claude Code (this session — building the entire app end-to-end, including the
+mid-build provider migrations, bug fixes, UI work, and this document), Google Gemini API with
+`gemini-flash-latest` (the app's own meal-generation calls).
 
 **Provider history (all real, not planned):** the build went through three LLM providers.
 Started on Anthropic per the initial spec. Switched to OpenAI (`gpt-4o-mini`) mid-build for
@@ -25,7 +25,9 @@ longer get free trial credits in most regions. Switched again to Google Gemini, 
 genuine free tier. The first Gemini model tried, `gemini-2.0-flash`, also failed live with a
 `limit: 0` free-tier quota error (that model appears to no longer carry free-tier allocation) —
 querying `GET /v1beta/models` against the same key showed `gemini-flash-latest` did work, and it
-became the shipped default. See ARCHITECTURE.md for the full reasoning.
+became the shipped default. This is the one deliberate deviation from the original spec (which
+named Anthropic specifically) — made openly, with the reasoning logged here and in ARCHITECTURE.md
+rather than silently swapped in.
 
 **Real run 1 — halal, intense workout, good sleep**
 - Request: `{"activity":"trained hard today (intense workout)","sleepQuality":"slept well, 7-9 hours","dietType":"halal"}`
@@ -38,17 +40,8 @@ became the shipped default. See ARCHITECTURE.md for the full reasoning.
   zabiha chicken/beef/lamb" and "alcohol-free vanilla extract", across 6 total real halal requests
   in this session. Zero flags, zero regenerations, on every single one. At the time these ran, the
   system prompt (`DIET_RULES.halal` in `lib/llm.js`) still explicitly instructed the model to use
-  that exact sourcing phrasing — which turned out to be *why* nothing ever flagged (see the Update
-  below and Run 3, where that instruction was later removed).
-- **Update — the regeneration loop was later exercised for real (see Run 3 below).** At this point
-  in the session, `regenerateFlaggedMeals()` had not yet fired against a real LLM response. That
-  turned out to be caused by two things stacking together, not just luck: the system prompt
-  originally spelled out the exact phrasing the checker looks for ("explicitly note ... 'halal-
-  certified zabiha'"), and `SAFE_QUALIFIERS` accepted the bare word "halal" as sufficient to clear a
-  mashbooh flag (see the qualifier-leniency finding below). Between those two, the model was
-  effectively being told the answer to its own quiz. Both were tightened (system prompt no longer
-  dictates sourcing phrasing; `SAFE_QUALIFIERS` now requires "halal-certified" or "zabiha", not bare
-  "halal") — see Run 3 for the real regeneration this produced.
+  that exact sourcing phrasing — which turned out to be *why* nothing ever flagged (see Run 3,
+  where that instruction was later removed).
 
 **Real run 2 — a genuine catch, just not on the halal diet type**
 - Request: `{"activity":"trained hard today (intense workout)","sleepQuality":"slept well, 7-9 hours","dietType":"meat-only"}`
@@ -101,42 +94,97 @@ just in theory.
   (`stage: "after_regeneration"`, `flags: []`, `corrected: true`). This is the real, end-to-end
   catch → regenerate → clear cycle, not a hand-crafted unit test.
 
+**Real run 4 — a second live regeneration, on a different ingredient (turkey bacon)**
+- Request: `{"activity":"trained hard today (intense workout)","sleepQuality":"slept well, 7-9 hours","dietType":"halal"}` (same wording as Run 1, run again after the checker was tightened).
+- Initial generation this time wrote `"2 strips grilled halal turkey bacon"` — flagged as mashbooh
+  on the `turkey` term (bare "halal" no longer clears it). Regeneration fired, the follow-up
+  response corrected the sourcing language, and the recheck came back with zero remaining flags.
+  Confirms Run 3 wasn't a one-off — the tightened checker reliably drives real corrections.
+
+**Real browser verification (not curl this time)** — after the backend was verified via curl,
+the frontend was rendered in an actual Chrome tab (screenshots reviewed directly) with a real
+halal request that produced 7 real mashbooh flags across a ribeye/calf-liver breakfast, a
+chicken-thigh/bone-broth lunch, and a braised-lamb dinner (all flagged for missing zabiha-sourcing
+language). This confirmed: the staged "AI is thinking..." status panel animates step-by-step
+rather than dumping the result instantly, the daily nutrition-totals panel sums correctly, the
+before/after flag panel renders legibly, and the meal cards display as designed. Two rounds of
+design fixes came directly out of reviewing those screenshots — see the Retrospective for what
+they caught.
+
 **Stretch — independent LLM auditor:** not built. Steps 1-4 (rule-based check + regeneration flow)
 were solid, but the two provider migrations plus the real bugs found while testing (`beef bacon`,
-`hamburger`/`ham`, etc. — see ARCHITECTURE.md and git history) consumed the time that would have
-gone to the auditor stretch goal. Cut for time, consistent with the brief's own framing of it as
-"only if steps 1-4 are solid with time to spare."
+`hamburger`/`ham`, etc.) consumed the time that would have gone to the auditor stretch goal. Cut
+for time, consistent with the brief's own framing of it as "only if steps 1-4 are solid with time
+to spare."
 
-**Note on integrity:** every excerpt above is from a real, actually-executed API call captured in
-this session (see git history for the timestamps of the corresponding code fixes). Nothing here is
-invented to make the log look more dramatic than what actually happened.
+**Note on integrity:** every excerpt above is from a real, actually-executed API call or a real
+rendered screenshot captured in this session (see git history for the timestamps of the
+corresponding code fixes). Nothing here is invented to make the log look more dramatic than what
+actually happened.
 
-**Beyond the original spec — automated tests and two product features, added with time to spare:**
-- `test/halalCheck.test.js` (Node's built-in `node:test`, zero new dependencies): 12 tests covering
-  word-boundary matching, haram-vs-mashbooh qualifier resolution (including the tightened
-  bare-"halal" case above), `-free` negation, and compound-safe-phrase suppression. Run via
-  `npm test`. This replaces the ad-hoc `node -e` checks used during development with something
-  reproducible and reviewable.
+**Beyond the original spec — added with time to spare, because the brief invited it:**
+- **Automated test suite** — `test/halalCheck.test.js`, using Node's built-in `node:test` (zero new
+  dependencies, run via `npm test`). 12 tests covering word-boundary matching, haram-vs-mashbooh
+  qualifier resolution (including the tightened bare-"halal" case above), `-free` negation, and
+  compound-safe-phrase suppression. Replaces the ad-hoc `node -e` checks used earlier in
+  development with something reproducible and reviewable.
 - **Daily nutrition summary** — sums calories/protein/carbs/fat across the 3 generated meals into
-  one totals panel, computed client-side from the existing per-meal macros (no backend change).
-- **Save as PDF / Email this plan** — both client-side only. "Save as PDF" calls the browser's
-  native print dialog against a dedicated print stylesheet. "Email this plan" builds a `mailto:`
-  link with the plan pre-filled and hands off to the user's own mail client — this was chosen over
-  building real email-sending (which would need a new dependency like Nodemailer/Resend plus SMTP
+  one totals panel, computed client-side from the existing per-meal macros (no backend change),
+  with each metric given a distinct accent color for scannability.
+- **Save as PDF / Email this plan** — both client-side only, no new backend. "Save as PDF" calls
+  the browser's native print dialog against a dedicated print stylesheet. "Email this plan" builds
+  a `mailto:` link with the plan pre-filled and hands off to the user's own mail client — chosen
+  over building real email-sending (which would need a dependency like Nodemailer/Resend plus SMTP
   or API credentials) specifically to avoid adding a dependency or a credential to manage for a
   take-home.
+- **A staged "thinking" status panel** and a full visual/UX pass (light theme, icon set, color
+  system) — the panel narrates the real pipeline stages (generate → check → regenerate-if-flagged
+  → recheck) as they actually happen, rather than a fake generic spinner.
+
+## Claude Code — how it was used (skills, tools, connectors)
+
+The entire app — backend, frontend, docs, and this file — was built in one continuous Claude Code
+session. Beyond writing code directly, a few specific capabilities did real work worth naming:
+
+- **`/code-review` (skill, run as a forked background agent):** run against the full codebase
+  early on. First invocation found nothing because everything was already committed (no diff to
+  review); re-run with an explicit instruction to review the whole tree, and it caught two real,
+  reproducible bugs before any live API call was made: substring false-positives where
+  `"hamburger"` matched the `"ham"` haram term, `"breadcrumb"` matched `"rum"`, and `"meatless"`
+  matched the `"meat"` mashbooh term. All three fixed by switching from plain substring matching to
+  word-boundary regex matching in `lib/halalCheck.js`.
+- **`/secret-scanning` (skill):** used once, near the end, to verify no API keys or credentials
+  were committed anywhere in the tree or git history before making the repo public, and to
+  explicitly enable GitHub secret scanning + push protection via `gh api` (they weren't on by
+  default despite the repo being public).
+- **`advisor` (a built-in review checkpoint, distinct from the GitHub-facing skills above):**
+  consulted at several decision points and before declaring the work "done." This is what actually
+  caught the most consequential issue in the whole build: that `regenerateFlaggedMeals()` — the
+  core catch-and-correct feature the assignment is about — had never fired against a real LLM
+  response despite an earlier draft of this document claiming it had been "verified." That
+  triggered the investigation that found the system prompt was handing the model the exact
+  sourcing phrase the checker looks for, and that the checker itself was too lenient (bare
+  "halal"). Also flagged, in a later pass: that the header icon read as a bell instead of
+  food-related, and that four identical-colored stat cards in the nutrition summary weren't
+  visually distinguishable — both fixed after real screenshots confirmed the problem.
+- **`claude-in-chrome` (browser automation connector):** attempted twice to open the running app in
+  an actual Chrome tab for visual verification. Both times blocked by the extension's site
+  permission setting for `localhost`. As a result, all UI rendering verification in this project
+  ultimately happened by the human running the app locally and sharing real screenshots back,
+  rather than Claude driving the browser directly — worth naming honestly since it shaped how
+  UI bugs got caught (only after real screenshots existed, not proactively).
+- **GitHub CLI (`gh`), via Bash:** used for repo creation, changing visibility to public
+  (`gh repo edit --visibility public`), and the secret-scanning/push-protection configuration above.
+- **`AskUserQuestion`:** used at real decision points instead of assuming — clarifying what
+  "gpt open api as it is free" actually meant before switching providers, confirming the
+  OpenAI → Gemini switch, and choosing the no-dependency "Save as PDF" / `mailto:` approach over
+  building real email-sending infrastructure.
+- **No new npm dependencies were added beyond the original `express` + `dotenv`** — LLM calls go
+  over Node's native `fetch` (no SDK needed for Gemini's REST API), and tests use Node's built-in
+  `node:test`. Every point where a new dependency was considered (OpenAI SDK, then dropping it;
+  a real email-sending package) was surfaced and decided explicitly rather than added silently.
 
 ## 회고 (Retrospective)
-
-**Tools used, in order:** Claude Code built the entire app in one session — repo init, curated
-flag data, deterministic checker, Express server, frontend, docs — with commits made incrementally.
-Mid-build, the LLM provider was changed twice at my request (Anthropic → OpenAI → Gemini), each
-change accompanied by an honest reasoning update in ARCHITECTURE.md rather than silently patched
-over. `/code-review` (a Claude Code review skill) was run against the full codebase and caught two
-real, reproducible bugs before I ever touched a live API: substring false-positives where
-`"hamburger"` matched the `"ham"` haram term, `"breadcrumb"` matched `"rum"`, and `"meatless"`
-matched the `"meat"` mashbooh term — all fixed by switching from plain substring matching to
-word-boundary regex matching.
 
 **Where I got stuck:**
 1. The `.env` file ended up as a directory containing a nested `.env/.env` at one point (likely
@@ -155,31 +203,37 @@ word-boundary regex matching.
    transient network blip — confirmed by re-testing the exact same `fetch()` call moments later and
    getting a clean 400/200, ruling out a code or DNS misconfiguration before treating it as a real
    bug.
+5. The regeneration path silently never fired for an entire block of testing, because the system
+   prompt and the checker's own leniency were quietly agreeing with each other (see the AI Usage
+   Log). Caught not by testing harder, but by an `advisor` review questioning why a "core feature"
+   had zero real executions — a good example of a gap that's invisible from inside the same
+   assumptions that created it.
 
 **How AI (Claude Code) helped unstick it:** methodically diagnosing each failure by reproducing it
-directly (raw `curl`/`node -e` calls against the actual API) rather than guessing at fixes, and by
-running an independent code-review pass that found real bugs (the substring false-positives) that
-manual testing during initial development hadn't surfaced.
+directly (raw `curl`/`node -e` calls against the actual API) rather than guessing at fixes; running
+an independent `/code-review` pass that found real bugs manual testing hadn't surfaced; and using
+`advisor` checkpoints to catch a false "verified" claim and a genuine blind spot (unrendered UI)
+before they shipped unquestioned.
 
 **What I'd do differently with more time:**
 - Build the stretch-goal independent auditor call (natural-language second opinion vs. the
   rule-based check) — genuinely cut for time this round, not attempted.
 - Expand the flag list with more E-numbers and cross-reference against a real halal-certification
   body's list instead of a hand-picked set.
-- Add a proper automated test suite around `checkMealsAgainstFlags` (word-boundary matching,
-  qualifier resolution, compound-safe-phrase suppression) instead of the ad-hoc `node -e` checks
-  run during development — there are now enough edge cases (mashbooh qualifiers, `-free` negation,
-  compound-safe phrases) that regression risk on future changes is real.
 - Persist before/after flag history to a local log so flag patterns could be reviewed across
   sessions instead of only the current request.
+- Get real Chrome automation working (or route around the permission block earlier) so UI issues
+  get caught by Claude proactively instead of waiting on manually-shared screenshots.
 
 ## 결과물 (Deliverables)
 
 - **Repo:** https://github.com/MakhmudSD/halal-meal-planner (public, per the author's choice for
   reviewer visibility; secret scanning and push protection enabled; no credentials in history —
   verified via full git-log secret scan before making public)
+- **Tests:** `npm test` runs the automated suite for the deterministic checker (12/12 passing).
 - **Demo recording:** not yet recorded as of this writing. Would show: the form submission for a
-  halal request, the 3 generated meals, and the before/after flag panel — including Run 3's real
-  mashbooh catch-and-regenerate cycle (bare "halal" sourcing flagged, then cleared to "zabiha
-  halal-certified" after regeneration) as the clearest end-to-end illustration of the deterministic
-  checker actually doing its job and driving a real correction.
+  halal request, the staged status panel animating through the real pipeline stages, the 3
+  generated meals, the daily totals panel, and the before/after flag panel — including a real
+  mashbooh catch-and-regenerate cycle (bare "halal"/generic sourcing flagged, then cleared to
+  "zabiha halal-certified" after regeneration) as the clearest end-to-end illustration of the
+  deterministic checker actually doing its job and driving a real correction.

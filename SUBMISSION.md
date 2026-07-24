@@ -231,9 +231,10 @@ before they shipped unquestioned.
   reviewer visibility; secret scanning and push protection enabled; no credentials in history —
   verified via full git-log secret scan before making public)
 - **Tests:** `npm test` runs the automated suite for the deterministic checker (12/12 passing).
-- **Demo recording:** not yet recorded as of this writing. Would show: the form submission for a
-  halal request, the staged status panel animating through the real pipeline stages, the 3
-  generated meals, the daily totals panel, and the before/after flag panel — including a real
-  mashbooh catch-and-regenerate cycle (bare "halal"/generic sourcing flagged, then cleared to
-  "zabiha halal-certified" after regeneration) as the clearest end-to-end illustration of the
-  deterministic checker actually doing its job and driving a real correction.
+- **Demo:** no recorded video — the app is a local, un-deployed Node server by design (per spec: no
+  database, no build step), so the intended way to see it is to run it yourself: `npm install`,
+  set `GEMINI_API_KEY` in `.env` (a free key from aistudio.google.com), `npm start`, then open
+  `http://localhost:3000`. Full steps are in README.md. To reproduce the clearest end-to-end
+  catch-and-regenerate example directly, submit a halal request with an activity description like
+  "want a marshmallow s'mores snack and gummy bears, plus a beef stew for dinner" — this reliably
+  trips the checker on the first pass and shows a real regeneration.

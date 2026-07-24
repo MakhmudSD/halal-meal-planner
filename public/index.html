@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Halal Meal Planner</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  :root { color-scheme: light dark; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    max-width: 720px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+    line-height: 1.5;
+  }
+  h1 { font-size: 1.5rem; }
+  form {
+    display: grid;
+    gap: 0.75rem;
+    padding: 1rem;
+    border: 1px solid #8884;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+  }
+  label { font-weight: 600; font-size: 0.9rem; }
+  select, input {
+    padding: 0.5rem;
+    font-size: 1rem;
+    border-radius: 6px;
+    border: 1px solid #8886;
+  }
+  button {
+    padding: 0.6rem 1rem;
+    font-size: 1rem;
+    font-weight: 600;
+    border-radius: 6px;
+    border: none;
+    background: #1a7f37;
+    color: white;
+    cursor: pointer;
+  }
+  button:disabled { opacity: 0.6; cursor: wait; }
+  .meal {
+    border: 1px solid #8884;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+  }
+  .meal h3 { margin: 0 0 0.25rem 0; text-transform: capitalize; }
+  .macros { font-size: 0.85rem; opacity: 0.8; }
+  .reasoning { font-style: italic; margin-top: 0.5rem; }
+  ul.ingredients { margin: 0.5rem 0; padding-left: 1.25rem; }
+  .flag-panel {
+    border: 2px solid #c0392b;
+    background: #c0392b11;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  .flag-panel.clean {
+    border-color: #1a7f37;
+    background: #1a7f3711;
+  }
+  .flag-item { margin-bottom: 0.5rem; font-size: 0.9rem; }
+  .flag-status { font-weight: 700; text-transform: uppercase; }
+  .flag-status.haram { color: #c0392b; }
+  .flag-status.mashbooh { color: #b8860b; }
+  .stage-label { font-weight: 700; margin-top: 0.75rem; display: block; }
+  #error { color: #c0392b; font-weight: 600; }
+</style>
+</head>
+<body>
+  <h1>🍽️ Halal Meal Planner</h1>
+  <p>Get 3 meals for the day based on your activity level and sleep quality — filtered by diet type. For halal, every ingredient is checked against a curated flag list before it reaches you.</p>
+
+  <form id="meal-form">
+    <div>
+      <label for="activity">Activity today</label><br />
+      <select id="activity" name="activity">
+        <option value="trained hard today (intense workout)">Trained hard today (intense workout)</option>
+        <option value="light activity today (walk, light exercise)">Light activity today</option>
+        <option value="rest day, no exercise">Rest day, no exercise</option>
+      </select>
+    </div>
+    <div>
+      <label for="sleepQuality">Sleep quality last night</label><br />
+      <select id="sleepQuality" name="sleepQuality">
+        <option value="slept well, 7-9 hours">Slept well (7-9 hours)</option>
+        <option value="slept poorly, under 5 hours">Slept poorly (under 5 hours)</option>
+        <option value="average sleep, around 6 hours">Average sleep (~6 hours)</option>
+      </select>
+    </div>
+    <div>
+      <label for="dietType">Diet type</label><br />
+      <select id="dietType" name="dietType">
+        <option value="halal">Halal</option>
+        <option value="vegan">Vegan</option>
+        <option value="meat-only">Meat-only</option>
+      </select>
+    </div>
+    <button type="submit" id="submit-btn">Generate meals</button>
+  </form>
+
+  <div id="error"></div>
+  <div id="results"></div>
+
+  <script>
+    const form = document.getElementById("meal-form");
+    const resultsEl = document.getElementById("results");
+    const errorEl = document.getElementById("error");
+    const submitBtn = document.getElementById("submit-btn");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      errorEl.textContent = "";
+      resultsEl.innerHTML = "";
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Generating...";
+
+      const payload = {
+        activity: document.getElementById("activity").value,
+        sleepQuality: document.getElementById("sleepQuality").value,
+        dietType: document.getElementById("dietType").value,
+      };
+
+      try {
+        const res = await fetch("/api/generate-meals", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Request failed");
+        render(data);
+      } catch (err) {
+        errorEl.textContent = "Error: " + err.message;
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Generate meals";
+      }
+    });
+
+    function render(data) {
+      renderFlagPanel(data);
+      renderMeals(data.meals);
+    }
+
+    function renderFlagPanel(data) {
+      const anyFlagsEver = data.flags.some((s) => s.flags.length > 0);
+      const panel = document.createElement("div");
+      panel.className = "flag-panel" + (anyFlagsEver ? "" : " clean");
+
+      if (!anyFlagsEver) {
+        panel.innerHTML = "<strong>✅ No halal flags raised.</strong> Every ingredient passed the deterministic checker on the first try.";
+        resultsEl.appendChild(panel);
+        return;
+      }
+
+      let html = "<strong>⚠️ Halal compliance check — before/after</strong>";
+      for (const stage of data.flags) {
+        html += `<span class="stage-label">${stage.stage === "initial" ? "Initial generation" : "After AI regeneration"}:</span>`;
+        if (stage.flags.length === 0) {
+          html += `<div class="flag-item">No flags at this stage.</div>`;
+        } else {
+          for (const f of stage.flags) {
+            html += `<div class="flag-item"><span class="flag-status ${f.status}">${f.status}</span> — "${f.ingredient}" in <em>${f.meal}</em>: ${f.reason}</div>`;
+          }
+        }
+      }
+      if (data.corrected && data.remainingFlags.length === 0) {
+        html += `<div class="flag-item" style="margin-top:0.5rem;"><strong>✅ All flags resolved after one regeneration pass.</strong></div>`;
+      } else if (data.corrected && data.remainingFlags.length > 0) {
+        html += `<div class="flag-item" style="margin-top:0.5rem;"><strong>⚠️ Some flags remained after regeneration — review below.</strong></div>`;
+      }
+      panel.innerHTML = html;
+      resultsEl.appendChild(panel);
+    }
+
+    function renderMeals(meals) {
+      for (const meal of meals) {
+        const div = document.createElement("div");
+        div.className = "meal";
+        div.innerHTML = `
+          <h3>${meal.slot}: ${meal.name}</h3>
+          <ul class="ingredients">${meal.ingredients.map((i) => `<li>${i}</li>`).join("")}</ul>
+          <div class="macros">Calories: ${meal.macros.calories} · Protein: ${meal.macros.protein_g}g · Carbs: ${meal.macros.carbs_g}g · Fat: ${meal.macros.fat_g}g</div>
+          <div class="reasoning">${meal.reasoning}</div>
+        `;
+        resultsEl.appendChild(div);
+      }
+    }
+  </script>
+</body>
+</html>

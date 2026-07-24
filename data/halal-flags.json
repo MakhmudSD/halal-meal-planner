@@ -1,0 +1,162 @@
+[
+  {
+    "term": "gelatin",
+    "status": "mashbooh",
+    "reason": "Gelatin is commonly derived from pork or non-zabiha beef/cattle bones and skin. Source must be explicitly confirmed as halal-certified (fish or halal-slaughtered bovine) before use."
+  },
+  {
+    "term": "alcohol",
+    "status": "haram",
+    "reason": "Ethanol/drinking alcohol is haram to consume in Islamic dietary law."
+  },
+  {
+    "term": "wine",
+    "status": "haram",
+    "reason": "Wine is an alcoholic beverage and is haram, including as a cooking ingredient (deglazing, reductions, marinades)."
+  },
+  {
+    "term": "beer",
+    "status": "haram",
+    "reason": "Beer is an alcoholic beverage and is haram, including as a cooking ingredient (batters, braises)."
+  },
+  {
+    "term": "spirits",
+    "status": "haram",
+    "reason": "Distilled spirits (rum, whiskey, brandy, etc.) are haram alcohol."
+  },
+  {
+    "term": "rum",
+    "status": "haram",
+    "reason": "Rum is a distilled alcoholic spirit and is haram."
+  },
+  {
+    "term": "vanilla extract",
+    "status": "mashbooh",
+    "reason": "Standard vanilla extract is suspended in ethanol (35%+ alcohol by volume). Requires an alcohol-free/food-grade halal-certified alternative."
+  },
+  {
+    "term": "extract",
+    "status": "mashbooh",
+    "reason": "Flavor extracts (vanilla, almond, lemon, etc.) are frequently alcohol-based carriers. Verify the specific extract is alcohol-free."
+  },
+  {
+    "term": "lard",
+    "status": "haram",
+    "reason": "Lard is rendered pork fat and is haram."
+  },
+  {
+    "term": "pork",
+    "status": "haram",
+    "reason": "Pork and all pork derivatives are haram."
+  },
+  {
+    "term": "bacon",
+    "status": "haram",
+    "reason": "Bacon is a pork product and is haram."
+  },
+  {
+    "term": "ham",
+    "status": "haram",
+    "reason": "Ham is a pork product and is haram."
+  },
+  {
+    "term": "pepperoni",
+    "status": "haram",
+    "reason": "Pepperoni is traditionally made from pork (and sometimes beef); source must be confirmed halal-certified beef/turkey to be acceptable."
+  },
+  {
+    "term": "chicken",
+    "status": "mashbooh",
+    "reason": "Chicken must be zabiha (Islamically slaughtered) to be halal. Without an explicit halal-sourcing note, mainstream commercial chicken cannot be assumed halal."
+  },
+  {
+    "term": "beef",
+    "status": "mashbooh",
+    "reason": "Beef must be from a zabiha-slaughtered, halal-certified source. Without an explicit halal-sourcing note, it cannot be assumed halal."
+  },
+  {
+    "term": "lamb",
+    "status": "mashbooh",
+    "reason": "Lamb must be from a zabiha-slaughtered, halal-certified source. Without an explicit halal-sourcing note, it cannot be assumed halal."
+  },
+  {
+    "term": "turkey",
+    "status": "mashbooh",
+    "reason": "Turkey must be from a zabiha-slaughtered, halal-certified source. Without an explicit halal-sourcing note, it cannot be assumed halal."
+  },
+  {
+    "term": "meat",
+    "status": "mashbooh",
+    "reason": "Generic 'meat' ingredient with no species or sourcing note cannot be verified as halal-slaughtered."
+  },
+  {
+    "term": "sausage",
+    "status": "mashbooh",
+    "reason": "Sausage casings and fillers can include pork or non-halal meat/gelatin binders unless explicitly halal-certified."
+  },
+  {
+    "term": "E120",
+    "status": "haram",
+    "reason": "E120 (carmine/cochineal) is derived from crushed insects; considered haram/mashbooh by most scholars, commonly treated as impermissible."
+  },
+  {
+    "term": "carmine",
+    "status": "haram",
+    "reason": "Carmine (E120) is an insect-derived colorant considered haram/mashbooh by most scholars."
+  },
+  {
+    "term": "cochineal",
+    "status": "haram",
+    "reason": "Cochineal (source of E120/carmine) is an insect-derived colorant considered haram/mashbooh by most scholars."
+  },
+  {
+    "term": "E441",
+    "status": "mashbooh",
+    "reason": "E441 is gelatin; source (pork vs. halal-certified bovine/fish) must be verified."
+  },
+  {
+    "term": "E471",
+    "status": "mashbooh",
+    "reason": "E471 (mono- and diglycerides of fatty acids) can be sourced from animal or plant fat; source must be verified as halal/plant-based."
+  },
+  {
+    "term": "mono- and diglycerides",
+    "status": "mashbooh",
+    "reason": "Emulsifiers of this type can be animal-derived (including pork fat); source must be verified."
+  },
+  {
+    "term": "rennet",
+    "status": "mashbooh",
+    "reason": "Animal rennet (used in cheese-making) is often derived from non-zabiha slaughtered animals; microbial/plant/halal-certified rennet is required."
+  },
+  {
+    "term": "whey",
+    "status": "mashbooh",
+    "reason": "Whey can be produced using animal rennet from non-halal-slaughtered animals; verify halal certification."
+  },
+  {
+    "term": "L-cysteine",
+    "status": "mashbooh",
+    "reason": "E920/L-cysteine (used as a dough conditioner) is sometimes derived from human hair or animal feathers/pork; synthetic or plant source must be confirmed."
+  },
+  {
+    "term": "mirin",
+    "status": "mashbooh",
+    "reason": "Traditional mirin contains alcohol; requires an alcohol-free version."
+  },
+  {
+    "term": "cooking wine",
+    "status": "haram",
+    "reason": "Cooking wine is an alcoholic ingredient and is haram."
+  },
+  {
+    "term": "marshmallow",
+    "status": "mashbooh",
+    "reason": "Marshmallows typically contain gelatin from an unverified (often pork) source."
+  },
+  {
+    "term": "gummy",
+    "status": "mashbooh",
+    "reason": "Gummy candies typically contain gelatin from an unverified (often pork) source."
+  }
+]

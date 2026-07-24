@@ -13,11 +13,13 @@ showing results to the user — catching what the model itself would otherwise m
 
 ## AI 활용 기록 (AI Usage Log)
 
-**Tools used:** Claude Code (this session, building the app), OpenAI API with `gpt-4o-mini` (the
-app's own meal-generation calls — see ARCHITECTURE.md for why the app switched providers
-mid-build).
+**Tools used:** Claude Code (this session, building the app), Google Gemini API with
+`gemini-2.0-flash` (the app's own meal-generation calls — see ARCHITECTURE.md for why the app
+went through two provider switches mid-build: Anthropic → OpenAI → Gemini, the last one because
+OpenAI's account had no billing configured and hit `insufficient_quota` on the very first live
+test call).
 
-This section is meant to hold real transcript excerpts — actual prompts sent to `gpt-4o-mini`
+This section is meant to hold real transcript excerpts — actual prompts sent to `gemini-2.0-flash`
 via the app, and actual responses, especially any that violated a halal flag or needed correction.
 These can only be captured once the app has actually been run against the live API.
 

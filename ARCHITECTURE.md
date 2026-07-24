@@ -3,21 +3,36 @@
 This document explains the choices behind the build, written as I made them — not reconstructed
 after the fact.
 
-## Why OpenAI, not Anthropic (mid-build switch)
+## LLM provider: two mid-build switches (Anthropic → OpenAI → Gemini)
 
-The build originally used the Anthropic API per the initial spec. Partway through, I switched to
-OpenAI's API (`openai` npm package, `gpt-4o-mini` by default) for three reasons: it's the more
-commonly deployed provider in the ecosystem I'm used to working in, setup friction was lower for
-this specific run, and for the kind of general nutrition/food-statistics brainstorming this app
-leans on for macro estimates and meal ideas, I judged GPT models to be a comfortable fit. This is
-not a claim that one provider is objectively better at the halal-detection problem — that problem
-is solved entirely by the deterministic, non-LLM checker in `lib/halalCheck.js`, which is
-provider-agnostic by design. Swapping the LLM only changes which model proposes meals; it changes
-nothing about how violations are caught. One real trade-off worth naming: OpenAI's Node SDK throws
-synchronously in its constructor if `OPENAI_API_KEY` is unset, unlike some SDKs that only fail on
-the first network call — so `lib/llm.js` lazily constructs the client on first use instead of at
-module load, otherwise a missing key would crash the whole server, including static page serving,
-before any request ever reached the LLM code.
+The build originally used the Anthropic API per the initial spec. It went through two provider
+changes after that, both mid-build and both for practical reasons rather than a halal-detection
+capability difference — that problem is solved entirely by the deterministic, non-LLM checker in
+`lib/halalCheck.js`, which is provider-agnostic by design. Swapping the LLM only changes which
+model proposes meals; it changes nothing about how violations are caught.
+
+1. **Anthropic → OpenAI**: switched to OpenAI's API (`gpt-4o-mini`) because it's a more familiar,
+   commonly-deployed provider and setup friction was lower for this run. This surfaced a real
+   trade-off worth naming even though the code has since moved on: OpenAI's Node SDK throws
+   synchronously in its constructor if `OPENAI_API_KEY` is unset, unlike some SDKs that only fail
+   on the first network call — a module-load-time client would have crashed the whole server,
+   including static page serving, before any request reached the LLM code. (`lib/llm.js` at the
+   time lazily constructed the client on first use to avoid this.)
+2. **OpenAI → Gemini**: after actually testing against a live key, OpenAI's account had no billing
+   configured and every call failed with `insufficient_quota` — new OpenAI accounts no longer get
+   free trial credits in most regions. Google's Gemini API (via Google AI Studio) does offer a
+   genuinely free tier with no credit card required, so the app switched again to avoid a hard
+   paywall blocking the actual point of the exercise: running the real generate → check →
+   regenerate flow and capturing real logs. `lib/llm.js` now calls the Gemini REST API directly
+   via Node's built-in `fetch` (`gemini-2.0-flash` by default) — no additional npm dependency at
+   all, which is a net simplification over both prior providers.
+
+Two structural notes from this history worth keeping in mind if the provider changes again:
+Gemini's multi-turn `contents` array uses role `"model"` for prior assistant turns (not
+`"assistant"`, which both Anthropic and OpenAI use) — a detail that would silently misbehave if
+copy-pasted from either of the other integrations. And regardless of provider, every response is
+still run through the same `checkMealsAgainstFlags()` — the actual halal-safety guarantee has
+never depended on which model proposed the meals.
 
 ## Why Express, not Nest (or anything else)
 

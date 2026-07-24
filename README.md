@@ -10,7 +10,8 @@ to regenerate just those meals.
 
 - Backend: Node.js + Express (no framework, no database — in-memory only)
 - Frontend: one static HTML page, vanilla JS + fetch, no build step
-- LLM: OpenAI API (`openai`), model `gpt-4o-mini` (configurable via `OPENAI_MODEL`)
+- LLM: Google Gemini API, model `gemini-2.0-flash` (configurable via `GEMINI_MODEL`), called
+  directly over REST via Node's built-in `fetch` — no SDK dependency
 
 ## Run it locally
 
@@ -20,11 +21,12 @@ to regenerate just those meals.
    npm install
    ```
 
-2. Create a `.env` file (copy `.env.example`) and set your API key:
+2. Create a `.env` file (copy `.env.example`) and set your API key. Get a free Gemini API key at
+   [aistudio.google.com](https://aistudio.google.com/app/apikey) (no credit card required):
 
    ```bash
    cp .env.example .env
-   # then edit .env and set OPENAI_API_KEY=sk-...
+   # then edit .env and set GEMINI_API_KEY=...
    ```
 
 3. Start the server:

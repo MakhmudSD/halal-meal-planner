@@ -7,30 +7,32 @@
 <style>
   :root {
     color-scheme: light dark;
-    --bg: #ffffff;
-    --fg: #1a1a1a;
-    --muted: #6b6b6b;
-    --border: #e2e2e2;
-    --card-bg: #fafafa;
-    --accent: #1a7f37;
-    --accent-bg: #1a7f3714;
-    --danger: #c0392b;
-    --danger-bg: #c0392b14;
+    --bg: #fbfcfa;
+    --fg: #24292e;
+    --muted: #6e7781;
+    --border: #e6e8eb;
+    --card-bg: #ffffff;
+    --accent: #2f9e5c;
+    --accent-bg: #eafaf1;
+    --danger: #d64545;
+    --danger-bg: #fdecea;
     --warn: #b8860b;
-    --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --warn-bg: #fdf3df;
+    --shadow: 0 1px 2px rgba(0,0,0,0.04), 0 1px 1px rgba(0,0,0,0.03);
   }
   @media (prefers-color-scheme: dark) {
     :root {
-      --bg: #14161a;
-      --fg: #eaeaea;
-      --muted: #9a9a9a;
-      --border: #2c2f35;
-      --card-bg: #1b1e24;
-      --accent: #3fbf6e;
-      --accent-bg: #3fbf6e1a;
-      --danger: #ff6b5e;
-      --danger-bg: #ff6b5e1a;
-      --warn: #e0b13d;
+      --bg: #1c1f24;
+      --fg: #e8e8e8;
+      --muted: #9aa0a6;
+      --border: #2e3238;
+      --card-bg: #22262c;
+      --accent: #4cc38a;
+      --accent-bg: #1d3b2a;
+      --danger: #e5766a;
+      --danger-bg: #3a2220;
+      --warn: #e3b356;
+      --warn-bg: #3a2f14;
       --shadow: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
     }
   }
@@ -44,8 +46,10 @@
     background: var(--bg);
     color: var(--fg);
   }
-  h1 { font-size: 1.6rem; margin-bottom: 0.25rem; }
+  h1 { font-size: 1.6rem; margin-bottom: 0.25rem; display: flex; align-items: center; gap: 0.5rem; }
+  h1 svg { width: 26px; height: 26px; color: var(--accent); }
   .subtitle { color: var(--muted); margin-top: 0; margin-bottom: 1.5rem; font-size: 0.95rem; }
+  .icon { width: 16px; height: 16px; flex: none; display: inline-block; vertical-align: -3px; }
 
   form {
     display: grid;
@@ -78,10 +82,19 @@
     background: var(--accent);
     color: white;
     cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
     transition: transform 0.1s ease, opacity 0.2s ease;
   }
   button:hover:not(:disabled) { transform: translateY(-1px); }
   button:disabled { opacity: 0.55; cursor: wait; transform: none; }
+  button.secondary {
+    background: var(--card-bg);
+    color: var(--fg);
+    border: 1px solid var(--border);
+  }
 
   /* ---- status / "thinking" panel ---- */
   #status-panel {
@@ -106,26 +119,31 @@
   }
   .status-step.active { opacity: 1; color: var(--fg); }
   .status-step.done { opacity: 1; color: var(--fg); }
-  .status-icon {
-    flex: none;
-    width: 20px; height: 20px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 0.8rem;
-  }
-  .status-step.active .status-icon::before {
-    content: "";
-    display: block;
+  .status-icon { flex: none; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; }
+  .status-icon .spinner {
     width: 14px; height: 14px;
     border-radius: 50%;
     border: 2px solid var(--border);
     border-top-color: var(--accent);
     animation: spin 0.7s linear infinite;
+    display: none;
   }
-  .status-step.done .status-icon::before { content: "✓"; color: var(--accent); font-weight: 700; font-size: 1rem; }
-  .status-step:not(.active):not(.done) .status-icon::before { content: "•"; color: var(--muted); }
+  .status-icon .check { width: 16px; height: 16px; color: var(--accent); display: none; }
+  .status-icon .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--border); display: block; }
+  .status-step.active .spinner { display: block; }
+  .status-step.active .dot, .status-step.active .check { display: none; }
+  .status-step.done .check { display: block; }
+  .status-step.done .dot, .status-step.done .spinner { display: none; }
   @keyframes spin { to { transform: rotate(360deg); } }
   @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
   @keyframes slideIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+  #save-bar {
+    display: none;
+    justify-content: flex-end;
+    margin-bottom: 1rem;
+  }
+  #save-bar.visible { display: flex; }
 
   .meal {
     border: 1px solid var(--border);
@@ -137,6 +155,7 @@
     animation: slideIn 0.35s ease both;
   }
   .meal h3 { margin: 0 0 0.5rem 0; font-size: 1.05rem; display: flex; align-items: center; gap: 0.5rem; }
+  .meal h3 .icon { color: var(--accent); width: 18px; height: 18px; }
   .slot-badge {
     font-size: 0.7rem;
     font-weight: 700;
@@ -161,18 +180,33 @@
     animation: slideIn 0.35s ease both;
   }
   .flag-panel.clean { border-color: var(--accent); background: var(--accent-bg); }
-  .flag-item { margin-bottom: 0.5rem; font-size: 0.9rem; }
+  .flag-panel-title { display: flex; align-items: center; gap: 0.5rem; font-weight: 700; }
+  .flag-panel-title .icon { width: 18px; height: 18px; }
+  .flag-panel .icon { color: var(--danger); }
+  .flag-panel.clean .icon { color: var(--accent); }
+  .flag-item { margin-bottom: 0.5rem; font-size: 0.9rem; display: flex; align-items: flex-start; gap: 0.4rem; }
+  .flag-item .icon { margin-top: 0.15rem; }
   .flag-status { font-weight: 700; text-transform: uppercase; font-size: 0.78rem; padding: 0.1rem 0.4rem; border-radius: 4px; }
   .flag-status.haram { color: var(--danger); background: var(--danger-bg); }
-  .flag-status.mashbooh { color: var(--warn); background: #b8860b1a; }
+  .flag-status.mashbooh { color: var(--warn); background: var(--warn-bg); }
   .stage-label { font-weight: 700; margin-top: 0.85rem; display: block; }
   .stage-label:first-of-type { margin-top: 0.5rem; }
+  .flag-resolved { display: flex; align-items: center; gap: 0.4rem; margin-top: 0.5rem; font-weight: 700; }
+  .flag-resolved .icon { color: var(--accent); }
 
-  #error { color: var(--danger); font-weight: 600; margin-bottom: 1rem; }
+  #error { color: var(--danger); font-weight: 600; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.4rem; }
+
+  @media print {
+    body { max-width: 100%; margin: 0; padding: 1rem; background: #fff; color: #000; }
+    form, #status-panel, #save-bar, #error, h1 svg + br { display: none !important; }
+    .subtitle { display: none; }
+    .meal, .flag-panel { box-shadow: none; border: 1px solid #ccc; break-inside: avoid; }
+    button { display: none !important; }
+  }
 </style>
 </head>
 <body>
-  <h1>🍽️ Halal Meal Planner</h1>
+  <h1><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4"/><path d="M5 10a7 7 0 0 1 14 0v9a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1z"/><path d="M2 21h20"/></svg> Halal Meal Planner</h1>
   <p class="subtitle">Get 3 meals for the day based on your activity level and sleep quality — filtered by diet type. For halal, every ingredient is checked against a curated flag list before it reaches you, and corrected if needed.</p>
 
   <form id="meal-form">
@@ -205,14 +239,37 @@
 
   <div id="error"></div>
   <div id="status-panel"></div>
+  <div id="save-bar">
+    <button type="button" class="secondary" id="save-btn">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Save as PDF
+    </button>
+  </div>
   <div id="results"></div>
 
   <script>
+    const ICONS = {
+      sunrise: '<path d="M17 18a5 5 0 0 0-10 0"/><line x1="12" y1="2" x2="12" y2="9"/><line x1="4.22" y1="10.22" x2="5.64" y2="11.64"/><line x1="1" y1="18" x2="3" y2="18"/><line x1="21" y1="18" x2="23" y2="18"/><line x1="18.36" y1="11.64" x2="19.78" y2="10.22"/><line x1="23" y1="22" x2="1" y2="22"/><polyline points="8 6 12 2 16 6"/>',
+      sun: '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>',
+      moon: '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>',
+      utensils: '<path d="M3 2v7c0 1.1.9 2 2 2h2a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M17 2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3v7"/>',
+      alert: '<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
+      check: '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 17.01"/>',
+      xCircle: '<circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>',
+    };
+    function icon(name, extraClass) {
+      return `<svg class="icon${extraClass ? " " + extraClass : ""}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICONS[name] || ""}</svg>`;
+    }
+
     const form = document.getElementById("meal-form");
     const resultsEl = document.getElementById("results");
     const errorEl = document.getElementById("error");
     const submitBtn = document.getElementById("submit-btn");
     const statusPanel = document.getElementById("status-panel");
+    const saveBar = document.getElementById("save-bar");
+    const saveBtn = document.getElementById("save-btn");
+
+    saveBtn.addEventListener("click", () => window.print());
 
     const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -233,7 +290,16 @@
 
     function renderStatusSteps(steps) {
       statusPanel.innerHTML = steps
-        .map((s) => `<div class="status-step" data-key="${s.key}"><span class="status-icon"></span><span>${s.label}</span></div>`)
+        .map(
+          (s) => `<div class="status-step" data-key="${s.key}">
+            <span class="status-icon">
+              <span class="spinner"></span>
+              ${icon("check", "check")}
+              <span class="dot"></span>
+            </span>
+            <span>${s.label}</span>
+          </div>`
+        )
         .join("");
     }
 
@@ -274,6 +340,7 @@
       e.preventDefault();
       errorEl.textContent = "";
       resultsEl.innerHTML = "";
+      saveBar.classList.remove("visible");
       submitBtn.disabled = true;
       submitBtn.textContent = "Generating...";
 
@@ -312,9 +379,10 @@
 
         statusPanel.classList.remove("visible");
         render(data);
+        saveBar.classList.add("visible");
       } catch (err) {
         statusPanel.classList.remove("visible");
-        errorEl.textContent = "Error: " + err.message;
+        errorEl.innerHTML = icon("xCircle") + "Error: " + err.message;
       } finally {
         submitBtn.disabled = false;
         submitBtn.textContent = "Generate meals";
@@ -332,41 +400,41 @@
       panel.className = "flag-panel" + (anyFlagsEver ? "" : " clean");
 
       if (!anyFlagsEver) {
-        panel.innerHTML = "<strong>✅ No halal flags raised.</strong> Every ingredient passed the deterministic checker on the first try.";
+        panel.innerHTML = `<div class="flag-panel-title">${icon("check")}No halal flags raised</div><div style="margin-top:0.4rem;">Every ingredient passed the deterministic checker on the first try.</div>`;
         resultsEl.appendChild(panel);
         return;
       }
 
-      let html = "<strong>⚠️ Halal compliance check — before/after</strong>";
+      let html = `<div class="flag-panel-title">${icon("alert")}Halal compliance check — before/after</div>`;
       for (const stage of data.flags) {
         html += `<span class="stage-label">${stage.stage === "initial" ? "Initial generation" : "After AI regeneration"}:</span>`;
         if (stage.flags.length === 0) {
           html += `<div class="flag-item">No flags at this stage.</div>`;
         } else {
           for (const f of stage.flags) {
-            html += `<div class="flag-item"><span class="flag-status ${f.status}">${f.status}</span> — "${f.ingredient}" in <em>${f.meal}</em>: ${f.reason}</div>`;
+            html += `<div class="flag-item">${icon("alert")}<span><span class="flag-status ${f.status}">${f.status}</span> — "${f.ingredient}" in <em>${f.meal}</em>: ${f.reason}</span></div>`;
           }
         }
       }
       if (data.corrected && data.remainingFlags.length === 0) {
-        html += `<div class="flag-item" style="margin-top:0.5rem;"><strong>✅ All flags resolved after one regeneration pass.</strong></div>`;
+        html += `<div class="flag-resolved">${icon("check")}All flags resolved after one regeneration pass.</div>`;
       } else if (data.corrected && data.remainingFlags.length > 0) {
-        html += `<div class="flag-item" style="margin-top:0.5rem;"><strong>⚠️ Some flags remained after regeneration — review below.</strong></div>`;
+        html += `<div class="flag-item" style="margin-top:0.5rem;">${icon("alert")}<strong>Some flags remained after regeneration — review below.</strong></div>`;
       }
       panel.innerHTML = html;
       resultsEl.appendChild(panel);
     }
 
-    const SLOT_ICON = { breakfast: "🌅", lunch: "☀️", dinner: "🌙" };
+    const SLOT_ICON = { breakfast: "sunrise", lunch: "sun", dinner: "moon" };
 
     function renderMeals(meals) {
       meals.forEach((meal, i) => {
         const div = document.createElement("div");
         div.className = "meal";
         div.style.animationDelay = `${i * 80}ms`;
-        const icon = SLOT_ICON[meal.slot] || "🍴";
+        const iconName = SLOT_ICON[meal.slot] || "utensils";
         div.innerHTML = `
-          <h3><span class="slot-badge">${meal.slot}</span> ${icon} ${meal.name}</h3>
+          <h3>${icon(iconName)}<span class="slot-badge">${meal.slot}</span> ${meal.name}</h3>
           <ul class="ingredients">${meal.ingredients.map((i) => `<li>${i}</li>`).join("")}</ul>
           <div class="macros">Calories: ${meal.macros.calories} · Protein: ${meal.macros.protein_g}g · Carbs: ${meal.macros.carbs_g}g · Fat: ${meal.macros.fat_g}g</div>
           <div class="reasoning">${meal.reasoning}</div>
